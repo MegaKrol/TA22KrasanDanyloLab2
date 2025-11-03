@@ -1,0 +1,62 @@
+﻿@*
+    This view expects a list of Pig models.
+    Namespace: TA22KrasanLab2.Models
+*@
+@model IEnumerable<TA22KrasanLab2.Models.Pig>
+
+@{
+    ViewData["Title"] = "Pig Index";
+}
+
+<h1>Pig Index</h1>
+
+<p>
+    <a asp-action="Create" class="btn btn-primary">Create New Pig</a>
+</p>
+
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>
+                @* This link passes the "Name" sort parameter to the Index action *@
+                <a asp-action="Index" asp-route-sortField="@TA22KrasanLab2.Controllers.PigController.PigSortField.Name">
+                    @Html.DisplayNameFor(model => model.Name)
+                </a>
+            </th>
+            <th>
+                @* This link passes the "Weight" sort parameter to the Index action *@
+                <a asp-action="Index" asp-route-sortField="@TA22KrasanLab2.Controllers.PigController.PigSortField.Weight">
+                    @Html.DisplayNameFor(model => model.Weight)
+                </a>
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.Description)
+            </th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in Model)
+        {
+            <tr>
+                <td>
+                    @Html.DisplayFor(modelItem => item.Name)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.Weight)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.Description)
+                </td>
+                <td>
+                    <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-outline-secondary">Edit</a> |
+
+                    @* This form is necessary to trigger the [HttpPost] Delete action *@
+                    <form asp-action="Delete" asp-route-id="@item.Id" method="post" style="display:inline;" onsubmit="return confirm('Are you sure you want to delete this pig?');">
+                        <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+                    </form>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
