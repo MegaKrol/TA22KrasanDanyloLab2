@@ -21,25 +21,67 @@ namespace TA22KrasanLab2.Controllers
             _context = context;
         }
 
-        public IActionResult Index(PigSortField sortField = PigSortField.Name)
-        {
-            switch (sortField)
-            {
-                case PigSortField.Name:
-                    return View(_context.Pigs.OrderBy(x => x.Name).ToList());
+        //public IActionResult Index(PigSortField sortField = PigSortField.Name)
+        //{
+        //    switch (sortField)
+        //    {
+        //        case PigSortField.Name:
+        //            return View(_context.Pigs.OrderBy(x => x.Name).ToList());
 
-                case PigSortField.Weight:
-                    return View(_context.Pigs.OrderBy(x => x.Weight).ToList());
+        //        case PigSortField.Weight:
+        //            return View(_context.Pigs.OrderBy(x => x.Weight).ToList());
+        //    }
+
+        //    return View(_context.Pigs.OrderBy(x => x.Name).ToList());
+        //}
+
+        public IActionResult Index(
+                            string? searchString,
+                            double? minWeight,
+                            PigSortField sortField = PigSortField.Name,
+                            int page = 1,
+                            int pageSize = 5)
+        {
+            // Початковий запит
+            var pigs = _context.Pigs.AsQueryable();
+
+            // 🔍 ФІЛЬТРАЦІЯ
+            if (!string.IsNullOrEmpty(searchString))
+            {
+                pigs = pigs.Where(p => p.Name.Contains(searchString));
             }
 
-            return View(_context.Pigs.OrderBy(x => x.Name).ToList());
+            if (minWeight.HasValue)
+            {
+                pigs = pigs.Where(p => p.Weight >= minWeight.Value);
+            }
+
+            // 🔽 СОРТУВАННЯ
+            pigs = sortField switch
+            {
+                PigSortField.Weight => pigs.OrderBy(p => p.Weight),
+                _ => pigs.OrderBy(p => p.Name)
+            };
+
+            // 🔢 ПАГІНАЦІЯ
+            int totalItems = pigs.Count();
+            var items = pigs.Skip((page - 1) * pageSize).Take(pageSize).ToList();
+
+            // Передаємо дані у View через ViewBag
+            ViewBag.CurrentPage = page;
+            ViewBag.TotalPages = (int)Math.Ceiling(totalItems / (double)pageSize);
+            ViewBag.SearchString = searchString;
+            ViewBag.MinWeight = minWeight;
+            ViewBag.SortField = sortField;
+
+            return View(items);
         }
 
-        [HttpGet]
-        public Pig GetPig(int id)
-        {
-            return _context.Pigs.Where(e => e.Id == id).FirstOrDefault();
-        }
+        //[HttpGet]
+        //public Pig GetPig(int id)
+        //{
+        //    return _context.Pigs.Where(e => e.Id == id).FirstOrDefault();
+        //}
 
 
         [HttpGet]
