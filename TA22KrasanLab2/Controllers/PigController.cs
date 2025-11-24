@@ -4,9 +4,11 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 using TA22KrasanLab2.Data;
 using TA22KrasanLab2.Models;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Authorization;
 
 namespace TA22KrasanLab2.Controllers
 {
+    [Authorize]
     public class PigController : Controller
     {
         public enum PigSortField
@@ -21,20 +23,6 @@ namespace TA22KrasanLab2.Controllers
             _context = context;
         }
 
-        //public IActionResult Index(PigSortField sortField = PigSortField.Name)
-        //{
-        //    switch (sortField)
-        //    {
-        //        case PigSortField.Name:
-        //            return View(_context.Pigs.OrderBy(x => x.Name).ToList());
-
-        //        case PigSortField.Weight:
-        //            return View(_context.Pigs.OrderBy(x => x.Weight).ToList());
-        //    }
-
-        //    return View(_context.Pigs.OrderBy(x => x.Name).ToList());
-        //}
-
         public IActionResult Index(
                             string? searchString,
                             double? minWeight,
@@ -45,7 +33,7 @@ namespace TA22KrasanLab2.Controllers
             // Початковий запит
             var pigs = _context.Pigs.AsQueryable();
 
-            // 🔍 ФІЛЬТРАЦІЯ
+            // filtration
             if (!string.IsNullOrEmpty(searchString))
             {
                 pigs = pigs.Where(p => p.Name.Contains(searchString));
@@ -56,18 +44,17 @@ namespace TA22KrasanLab2.Controllers
                 pigs = pigs.Where(p => p.Weight >= minWeight.Value);
             }
 
-            // 🔽 СОРТУВАННЯ
+            // sorting
             pigs = sortField switch
             {
                 PigSortField.Weight => pigs.OrderBy(p => p.Weight),
                 _ => pigs.OrderBy(p => p.Name)
             };
 
-            // 🔢 ПАГІНАЦІЯ
+            // pagination
             int totalItems = pigs.Count();
             var items = pigs.Skip((page - 1) * pageSize).Take(pageSize).ToList();
 
-            // Передаємо дані у View через ViewBag
             ViewBag.CurrentPage = page;
             ViewBag.TotalPages = (int)Math.Ceiling(totalItems / (double)pageSize);
             ViewBag.SearchString = searchString;
@@ -85,6 +72,7 @@ namespace TA22KrasanLab2.Controllers
 
 
         [HttpGet]
+        [Authorize(Roles = "Admin")]
         public IActionResult Create()
         {
             var createPigVM = new CreatePigVM();
@@ -93,6 +81,8 @@ namespace TA22KrasanLab2.Controllers
         }
 
         [HttpPost]
+        [ValidateAntiForgeryToken]
+        [Authorize(Roles = "Admin")]
         public IActionResult Create(CreatePigVM createPigVM)
         {
             if (ModelState.IsValid)
@@ -113,6 +103,7 @@ namespace TA22KrasanLab2.Controllers
 
 
         [HttpGet]
+        [Authorize(Roles = "Admin")]
         public IActionResult Edit(int id)
         {
 
@@ -130,6 +121,7 @@ namespace TA22KrasanLab2.Controllers
         }
 
         [HttpPost]
+        [Authorize(Roles = "Admin")]
         public IActionResult Edit(EditPigVM editPigVM)
         {
             if (ModelState.IsValid)
@@ -149,6 +141,7 @@ namespace TA22KrasanLab2.Controllers
         }
 
         [HttpPost, ActionName("Delete")]
+        [Authorize(Roles = "Admin")]
         public IActionResult Delete(int id)
         {
             var pig = _context.Pigs.Where(pig => pig.Id == id).FirstOrDefault();

@@ -1,33 +1,42 @@
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using TA22KrasanLab2.Data;
+using Microsoft.AspNetCore.Identity;
+using System;
+using TA22KrasanDanyloLab2.Data;
 
 namespace TA22KrasanLab2
 {
     public class Program
     {
-        public static void Main(string[] args)
+        public static async Task Main(string[] args)
         {
             var builder = WebApplication.CreateBuilder(args);
 
             var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 
-            // 2. Register FarmContext as a service (tells the app how to create it)
             builder.Services.AddDbContext<FarmContext>(options =>
-                // Make sure you're using the correct provider you installed
-                // e.g., UseSqlServer, UseSqlite, etc.
                 options.UseSqlServer(connectionString)
             );
 
-            // Add services to the container.
+            builder.Services.AddIdentity<IdentityUser, IdentityRole>(options =>
+            {
+                options.SignIn.RequireConfirmedAccount = false;
+                options.Password.RequireDigit = false;
+                options.Password.RequireNonAlphanumeric = false;
+                options.Password.RequireUppercase = false;
+                options.Password.RequiredLength = 4;
+            })
+                .AddEntityFrameworkStores<FarmContext>()
+                .AddDefaultTokenProviders()
+                .AddDefaultUI();
+
             builder.Services.AddControllersWithViews();
 
             var app = builder.Build();
 
-            // Configure the HTTP request pipeline.
             if (!app.Environment.IsDevelopment())
             {
                 app.UseExceptionHandler("/Home/Error");
-                // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
                 app.UseHsts();
             }
 
@@ -36,13 +45,32 @@ namespace TA22KrasanLab2
 
             app.UseRouting();
 
+            app.UseAuthentication();
             app.UseAuthorization();
 
             app.MapControllerRoute(
                 name: "default",
                 pattern: "{controller=Home}/{action=Index}/{id?}");
 
-            app.Run();
+            app.MapRazorPages();
+
+            // init roles
+            using (var scope = app.Services.CreateScope())
+            {
+                var services = scope.ServiceProvider;
+                try
+                {
+                    // 
+                    await RoleInitializer.InitializeAsync(services);
+                }
+                catch (Exception ex)
+                {
+                    var logger = services.GetRequiredService<ILogger<Program>>();
+                    logger.LogError(ex, "Сталася помилка при створенні ролей");
+                }
+            }
+
+            await app.RunAsync();
         }
     }
 }
